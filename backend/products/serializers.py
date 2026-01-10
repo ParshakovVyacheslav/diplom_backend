@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Product, Meal
+from drf_yasg import openapi
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:

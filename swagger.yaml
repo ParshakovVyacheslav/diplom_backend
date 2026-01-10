@@ -23,7 +23,7 @@ paths:
   /api/meals/:
     get:
       operationId: api_meals_list
-      description: ''
+      description: Получить список всех приемов пищи пользователя
       parameters: []
       responses:
         '200':
@@ -32,78 +32,163 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Meal'
+        '401':
+          description: Пользователь не авторизован
       tags:
-      - api
+      - Приемы пищи
     post:
       operationId: api_meals_create
-      description: ''
+      description: Создать новый прием пищи
       parameters:
       - name: data
         in: body
         required: true
         schema:
-          $ref: '#/definitions/Meal'
+          required:
+          - product
+          - name
+          - amount
+          type: object
+          properties:
+            product:
+              description: ID продукта
+              type: integer
+              example: 1
+            name:
+              description: Название приема пищи
+              type: string
+              example: Завтрак
+            amount:
+              description: Количество в граммах
+              type: integer
+              example: 150
+            position:
+              description: Порядковый номер
+              type: integer
+              example: 1
       responses:
         '201':
           description: ''
           schema:
             $ref: '#/definitions/Meal'
+        '400':
+          description: Неверные данные
+        '401':
+          description: Пользователь не авторизован
       tags:
-      - api
+      - Приемы пищи
     parameters: []
   /api/meals/{id}/:
     get:
       operationId: api_meals_read
-      description: ''
+      description: Получить детальную информацию о приеме пищи
       parameters: []
       responses:
         '200':
           description: ''
           schema:
             $ref: '#/definitions/Meal'
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Прием пищи не найден
       tags:
-      - api
+      - Приемы пищи
     put:
       operationId: api_meals_update
-      description: ''
+      description: Обновить прием пищи
       parameters:
       - name: data
         in: body
         required: true
         schema:
-          $ref: '#/definitions/Meal'
+          required:
+          - product
+          - name
+          - amount
+          type: object
+          properties:
+            product:
+              description: ID продукта
+              type: integer
+              example: 2
+            name:
+              description: Название приема пищи
+              type: string
+              example: Обед
+            amount:
+              description: Количество в граммах
+              type: integer
+              example: 200
+            position:
+              description: Порядковый номер
+              type: integer
+              example: 2
       responses:
         '200':
           description: ''
           schema:
             $ref: '#/definitions/Meal'
+        '400':
+          description: Неверные данные
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Прием пищи не найден
       tags:
-      - api
+      - Приемы пищи
     patch:
       operationId: api_meals_partial_update
-      description: ''
+      description: Частично обновить прием пищи
       parameters:
       - name: data
         in: body
         required: true
         schema:
-          $ref: '#/definitions/Meal'
+          type: object
+          properties:
+            product:
+              description: ID продукта (необязательно)
+              type: integer
+              example: 3
+            name:
+              description: Название приема пищи (необязательно)
+              type: string
+              example: Ужин
+            amount:
+              description: Количество в граммах (необязательно)
+              type: integer
+              example: 180
+            position:
+              description: Порядковый номер (необязательно)
+              type: integer
+              example: 3
       responses:
         '200':
           description: ''
           schema:
             $ref: '#/definitions/Meal'
+        '400':
+          description: Неверные данные
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Прием пищи не найден
       tags:
-      - api
+      - Приемы пищи
     delete:
       operationId: api_meals_delete
-      description: ''
+      description: Удалить прием пищи
       parameters: []
       responses:
         '204':
-          description: ''
+          description: Прием пищи удален
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Прием пищи не найден
       tags:
-      - api
+      - Приемы пищи
     parameters:
     - name: id
       in: path
@@ -113,7 +198,7 @@ paths:
   /api/products/:
     get:
       operationId: api_products_list
-      description: ''
+      description: Получить список всех продуктов
       parameters: []
       responses:
         '200':
@@ -122,21 +207,27 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Product'
+        '401':
+          description: Пользователь не авторизован
       tags:
-      - api
+      - Продукты
     parameters: []
   /api/products/{id}/:
     get:
       operationId: api_products_read
-      description: ''
+      description: Получить детальную информацию о продукте
       parameters: []
       responses:
         '200':
           description: ''
           schema:
             $ref: '#/definitions/Product'
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Продукт не найден
       tags:
-      - api
+      - Продукты
     parameters:
     - name: id
       in: path
