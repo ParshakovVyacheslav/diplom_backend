@@ -86,10 +86,24 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
-    'LOGIN_FIELD': 'email',
+    'LOGIN_FIELD': 'username',
     'USER_CREATE_PASSWORD_RETYPE': False,
     'SERIALIZERS': {
         'user_create': 'accounts.serializers.CustomUserCreateSerializer',
+        'user': 'accounts.serializers.CustomUserSerializer', 
+        'current_user': 'accounts.serializers.CustomUserSerializer', 
+    },
+
+    'SEND_ACTIVATION_EMAIL': True,
+    'ACTIVATION_URL': 'activate/{uid}/{token}',
+    'SEND_CONFIRMATION_EMAIL': False,
+
+    'ACTIVATION_EXPIRED_DAYS': 3,
+    'USERNAME_RESET_CONFIRM_URL': None,
+
+    'PERMISSIONS': {
+        'user_list': ['rest_framework.permissions.IsAdminUser'],
+        'user': ['djoser.permissions.CurrentUserOrAdmin'],
     },
 }
 
@@ -106,6 +120,14 @@ SWAGGER_SETTINGS = {
     'LANG': 'ru',
     'DEFAULT_AUTO_SCHEMA_CLASS': 'drf_yasg.inspectors.SwaggerAutoSchema',
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+DEFAULT_FROM_EMAIL = 'noreply@yourdomain.com'
 
 LANGUAGE_CODE = 'ru'
 
