@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -6,7 +7,7 @@ SECRET_KEY = 'django-insecure-eyb1#49vn#8jwh^z=z&l-w%3#u%*jgg=5w74vufc8j^2e_&%#(
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web']
 
 INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
@@ -137,4 +138,5 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
