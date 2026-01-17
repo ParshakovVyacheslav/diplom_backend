@@ -21,7 +21,7 @@ urlpatterns = [
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
 
-    path('', include('accounts.urls')),
+    path('auth/', include('accounts.urls')),
     path('api/', include('products.urls')),
 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
