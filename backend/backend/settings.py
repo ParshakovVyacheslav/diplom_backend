@@ -123,7 +123,21 @@ SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
     'LANG': 'ru',
     'DEFAULT_AUTO_SCHEMA_CLASS': 'drf_yasg.inspectors.SwaggerAutoSchema',
+    'DEFAULT_API_URL': os.getenv('SWAGGER_BASE_URL', 'http://127.0.0.1:2224'),
+    'DEEP_LINKING': True,
 }
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://37.23.134.155',
+    'http://127.0.0.1',
+]
+
+CSRF_COOKIE_DOMAIN = None 
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'http')
+
 
 EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('DJANGO_EMAIL_HOST', 'localhost')
