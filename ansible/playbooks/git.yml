@@ -1,0 +1,22 @@
+---
+- name: Test Ansible - Install Git
+  hosts: all
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+    
+    - name: Check Git version
+      command: git --version
+      register: git_version
+      
+    - name: Show Git version
+      debug:
+        msg: "Git installed successfully: {{ git_version.stdout }}"

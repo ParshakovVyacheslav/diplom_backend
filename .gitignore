@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Ansible
+secrets.yml
+*.secret.yml
+vars/secrets/
