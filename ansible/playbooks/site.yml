@@ -1,0 +1,4 @@
+---
+- import_playbook: setup-ansible-user.yml
+- import_playbook: install-git.yml
+- import_playbook: install-docker.yml

@@ -210,3 +210,9 @@ __marimo__/
 secrets.yml
 *.secret.yml
 vars/secrets/
+
+# Nginx — локальный список allow для /admin/ (см. nginx/admin-allow.conf.example)
+nginx/admin-allow.conf
+
+# Other
+Dev/

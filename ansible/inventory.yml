@@ -1,37 +1,7 @@
 ---
 all:
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-  
-  vars_files:
-    - secrets.yml  
-  
-  children:
-    postgres_servers:
-      hosts:
-        db_server:
-          ansible_host: 192.168.56.101
-          ansible_user: debian-user
-      
-      vars:
-        postgres_version: 17
-        postgres_port: 5432
-        postgres_data_dir: /var/lib/postgresql/{{ postgres_version }}/main
-        
-        db_name: "myapp"
-        db_user: "myapp_user"
-
-        
-    docker_hosts:
-      hosts:
-        docker_server:
-          ansible_host: 192.168.56.101
-          ansible_user: debian-user
-      
-      vars:
-        docker_packages:
-          - docker.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        docker_ce: true
-        
+  hosts:
+    server:
+      ansible_user: ansible
+      ansible_become: true
+      ansible_become_method: sudo

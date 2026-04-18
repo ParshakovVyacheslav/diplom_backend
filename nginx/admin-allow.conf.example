@@ -1,0 +1,13 @@
+# Пример списка разрешённых IP для location /admin/
+#
+# Скопируйте и подставьте свои адреса:
+#   cp nginx/admin-allow.conf.example nginx/admin-allow.conf
+# (Windows: copy nginx\admin-allow.conf.example nginx\admin-allow.conf)
+#
+# Файл nginx/admin-allow.conf в репозиторий не коммитится.
+
+# VirtualBox NAT: доступ с хоста к гостю (не нужно — удалите строку)
+allow 10.0.2.2;
+
+# Ваш IP для доступа к /admin/ (подставьте реальный; ниже — тестовый из RFC 5737)
+allow 203.0.113.50;

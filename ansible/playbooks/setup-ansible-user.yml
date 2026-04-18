@@ -1,0 +1,29 @@
+---
+- name: Setup Ansible user
+  hosts: server
+  gather_facts: false
+  become: true
+  become_method: "{{ bootstrap_become_method }}"
+  vars:
+    ansible_user: "{{ ssh_user }}"
+    ansible_password: "{{ ssh_password }}"
+    ansible_become_password: "{{ bootstrap_become_password }}"
+
+  tasks:
+    - name: Create ansible user
+      user:
+        name: ansible
+        password: "{{ ansible_user_password | password_hash('sha512') }}"
+        shell: /bin/bash
+        groups: sudo
+        append: true
+        update_password: always
+
+    - name: Configure sudo without password for ansible
+      copy:
+        dest: /etc/sudoers.d/ansible
+        content: "ansible ALL=(ALL) NOPASSWD:ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"

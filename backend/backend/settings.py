@@ -128,8 +128,12 @@ SWAGGER_SETTINGS = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://37.23.134.155',
-    'http://127.0.0.1',
+    o.strip()
+    for o in os.getenv(
+        'DJANGO_CSRF_TRUSTED_ORIGINS',
+        'http://127.0.0.1,http://localhost:2224',
+    ).split(',')
+    if o.strip()
 ]
 
 CSRF_COOKIE_DOMAIN = None 
