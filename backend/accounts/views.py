@@ -10,7 +10,7 @@ def activate_user(request, uid, token):
         scheme = 'https' if request.is_secure() else 'http'
         domain = request.get_host()
         
-        djoser_url = f"{scheme}://{domain}/auth/users/activation/"
+        djoser_url = f"http://127.0.0.1:8000/auth/users/activation/"
         
         response = requests.post(
             djoser_url,
