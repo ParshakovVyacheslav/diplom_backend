@@ -1,5 +1,9 @@
-from rest_framework import viewsets, mixins
+from django.db.models import F
+from django.contrib.postgres.search import TrigramSimilarity
+from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import Product, Meal
@@ -12,6 +16,7 @@ class ProductViewSet(mixins.RetrieveModelMixin,
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
+    search_similarity_threshold = 0.1
 
     @swagger_auto_schema(
         operation_description="Получить список всех продуктов",
@@ -35,6 +40,66 @@ class ProductViewSet(mixins.RetrieveModelMixin,
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Поиск продуктов по названию (триграммный поиск)",
+        manual_parameters=[
+            openapi.Parameter(
+                'q',
+                openapi.IN_QUERY,
+                description='Строка поиска',
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'limit',
+                openapi.IN_QUERY,
+                description='Количество результатов (по умолчанию 10)',
+                type=openapi.TYPE_INTEGER,
+                required=False
+            ),
+        ],
+        responses={
+            200: openapi.Schema(
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'name': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            ),
+            400: "Параметр q обязателен",
+            401: "Пользователь не авторизован"
+        },
+        tags=['Продукты']
+    )
+    @action(detail=False, methods=['get'], url_path='search')
+    def search(self, request, *args, **kwargs):
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response(
+                {'detail': 'Параметр q обязателен'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            limit = int(request.query_params.get('limit', 10))
+        except (TypeError, ValueError):
+            limit = 10
+
+        limit = max(1, limit)
+
+        products = (
+            Product.objects
+            .annotate(similarity=TrigramSimilarity('name', query))
+            .filter(similarity__gte=self.search_similarity_threshold)
+            .order_by(F('similarity').desc(), 'id')
+            .values('id', 'name')[:limit]
+        )
+
+        return Response(list(products), status=status.HTTP_200_OK)
 
 
 class MealViewSet(viewsets.ModelViewSet):

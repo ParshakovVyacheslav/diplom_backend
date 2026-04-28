@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.indexes import GinIndex
 
 User = get_user_model()
 
@@ -23,6 +24,9 @@ class Product(models.Model):
     class Meta:
         verbose_name = 'Продукт'
         verbose_name_plural = 'Продукты'
+        indexes = [
+            GinIndex(fields=['name'], opclasses=['gin_trgm_ops'], name='product_name_trgm_gin_idx')
+        ]
 
 
 class Meal(models.Model):
