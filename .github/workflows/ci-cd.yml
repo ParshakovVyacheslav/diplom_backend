@@ -49,7 +49,6 @@ jobs:
           POSTGRES_PORT: "5432"
         run: python backend/manage.py test
 
-
   cd:
     name: Build and push image
     runs-on: ubuntu-latest
