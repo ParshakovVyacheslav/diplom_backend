@@ -1,18 +1,18 @@
 {% load i18n %}
 
 {% block subject %}
-{% blocktrans %}Активация аккаунта на {{ site_name }}{% endblocktrans %}
+{% blocktrans %}Активация аккаунта на RICE{% endblocktrans %}
 {% endblock subject %}
 
 {% block text_body %}
-{% blocktrans %}Вы получили это письмо, потому что вам нужно завершить активацию аккаунта на {{ site_name }}.{% endblocktrans %}
+{% blocktrans %}Вы получили это письмо, потому что вам нужно завершить активацию аккаунта на RICE.{% endblocktrans %}
 
 {% trans "Пожалуйста, перейдите по ссылке ниже для активации аккаунта:" %}
 http://{{ domain }}/{{ url|safe }}
 
 {% trans "Спасибо за использование нашего сайта!" %}
 
-{% blocktrans %}Команда {{ site_name }}{% endblocktrans %}
+{% blocktrans %}Команда RICE{% endblocktrans %}
 {% endblock text_body %}
 
 {% block html_body %}
@@ -21,9 +21,8 @@ http://{{ domain }}/{{ url|safe }}
     {% blocktrans %}Вы получили это письмо, потому что вам нужно завершить активацию аккаунта на {{ site_name }}.{% endblocktrans %}
 </p>
 <p>
-    {% trans "Пожалуйста, перейдите по ссылке ниже для активации аккаунта:" %}<br>
-    <a href="http://{{ domain }}/auth/{{ url|safe }}">http://{{ domain }}/{{ url|safe }}</a>
+    {% trans "Пожалуйста, перейдите по <a href="http://{{ domain }}/auth/{{ url|safe }}">ссылке</a> для активации аккаунта:" %}<br>
 </p>
 <p>{% trans "Спасибо за использование нашего сайта!" %}</p>
-<p>{% blocktrans %}Команда {{ site_name }}{% endblocktrans %}</p>
+<p>{% blocktrans %}Команда RICE{% endblocktrans %}</p>
 {% endblock html_body %}
