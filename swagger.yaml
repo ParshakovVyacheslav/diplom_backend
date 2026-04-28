@@ -3,7 +3,7 @@ info:
   title: API for mobile
   description: АПИ для мобильного приложения подсчет каллорий и тренировок
   version: v1
-host: 127.0.0.1:8000
+host: 127.0.0.1:2224
 schemes:
 - http
 basePath: /
@@ -212,6 +212,40 @@ paths:
       tags:
       - Продукты
     parameters: []
+  /api/products/search/:
+    get:
+      operationId: api_products_search
+      description: Поиск продуктов по названию (триграммный поиск)
+      parameters:
+      - name: q
+        in: query
+        description: Строка поиска
+        required: true
+        type: string
+      - name: limit
+        in: query
+        description: Количество результатов (по умолчанию 10)
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+        '400':
+          description: Параметр q обязателен
+        '401':
+          description: Пользователь не авторизован
+      tags:
+      - Продукты
+    parameters: []
   /api/products/{id}/:
     get:
       operationId: api_products_read
@@ -251,6 +285,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/TokenObtainPair'
+        '400':
+          description: Неверный логин или пароль
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -271,6 +309,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/TokenRefresh'
+        '400':
+          description: Некорректный или просроченный refresh токен
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters: []
@@ -291,6 +333,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/TokenVerify'
+        '400':
+          description: Некорректный токен
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters: []
@@ -305,7 +351,11 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/User'
+              $ref: '#/definitions/CustomUser'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     post:
@@ -322,6 +372,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/CustomUserCreate'
+        '400':
+          description: Ошибки валидации при регистрации
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -340,6 +394,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/Activation'
+        '400':
+          description: Неверный uid или token активации
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters: []
@@ -354,7 +412,11 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/User'
+              $ref: '#/definitions/CustomUser'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     put:
@@ -365,12 +427,20 @@ paths:
         in: body
         required: true
         schema:
-          $ref: '#/definitions/User'
+          $ref: '#/definitions/CustomUser'
       responses:
         '200':
           description: ''
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/CustomUser'
+        '400':
+          description: Ошибки валидации профиля
+          schema:
+            $ref: '#/definitions/AuthValidationError'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     patch:
@@ -381,12 +451,20 @@ paths:
         in: body
         required: true
         schema:
-          $ref: '#/definitions/User'
+          $ref: '#/definitions/CustomUser'
       responses:
         '200':
           description: ''
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/CustomUser'
+        '400':
+          description: Ошибки валидации профиля
+          schema:
+            $ref: '#/definitions/AuthValidationError'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     delete:
@@ -396,6 +474,10 @@ paths:
       responses:
         '204':
           description: ''
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters: []
@@ -414,6 +496,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/SendEmailReset'
+        '400':
+          description: Ошибка валидации email
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -432,6 +518,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/SendEmailReset'
+        '400':
+          description: Ошибка валидации email
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -450,6 +540,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/PasswordResetConfirm'
+        '400':
+          description: Неверный токен или слабый пароль
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -468,6 +562,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/SendEmailReset'
+        '400':
+          description: Ошибка валидации email
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -486,6 +584,10 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/UsernameResetConfirm'
+        '400':
+          description: Неверный токен или логин
+          schema:
+            $ref: '#/definitions/AuthValidationError'
       tags:
       - auth
     parameters: []
@@ -504,6 +606,14 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/SetPassword'
+        '400':
+          description: Неверный текущий пароль или слабый новый пароль
+          schema:
+            $ref: '#/definitions/AuthValidationError'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters: []
@@ -522,6 +632,14 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/SetUsername'
+        '400':
+          description: Неверный пароль или некорректный новый логин
+          schema:
+            $ref: '#/definitions/AuthValidationError'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters: []
@@ -534,7 +652,15 @@ paths:
         '200':
           description: ''
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/CustomUser'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
+        '404':
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     put:
@@ -545,12 +671,24 @@ paths:
         in: body
         required: true
         schema:
-          $ref: '#/definitions/User'
+          $ref: '#/definitions/CustomUser'
       responses:
         '200':
           description: ''
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/CustomUser'
+        '400':
+          description: Ошибки валидации данных пользователя
+          schema:
+            $ref: '#/definitions/AuthValidationError'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
+        '404':
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     patch:
@@ -561,12 +699,24 @@ paths:
         in: body
         required: true
         schema:
-          $ref: '#/definitions/User'
+          $ref: '#/definitions/CustomUser'
       responses:
         '200':
           description: ''
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/CustomUser'
+        '400':
+          description: Ошибки валидации данных пользователя
+          schema:
+            $ref: '#/definitions/AuthValidationError'
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
+        '404':
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     delete:
@@ -576,6 +726,14 @@ paths:
       responses:
         '204':
           description: ''
+        '401':
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/AuthDetailError'
+        '404':
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/AuthDetailError'
       tags:
       - auth
     parameters:
@@ -606,13 +764,13 @@ definitions:
       amount:
         title: Количество порций
         type: integer
-        maximum: 9223372036854775807
-        minimum: -9223372036854775808
+        maximum: 2147483647
+        minimum: -2147483648
       position:
         title: Порядковый номер
         type: integer
-        maximum: 9223372036854775807
-        minimum: -9223372036854775808
+        maximum: 2147483647
+        minimum: -2147483648
       date:
         title: Дата приема пищи
         type: string
@@ -658,8 +816,8 @@ definitions:
       number_of_servings:
         title: Количество порций
         type: integer
-        maximum: 9223372036854775807
-        minimum: -9223372036854775808
+        maximum: 2147483647
+        minimum: -2147483648
       producer:
         title: Производитель
         type: string
@@ -671,8 +829,8 @@ definitions:
       calories:
         title: Калории (ккал)
         type: integer
-        maximum: 9223372036854775807
-        minimum: -9223372036854775808
+        maximum: 2147483647
+        minimum: -2147483648
         x-nullable: true
       protein:
         title: Белки (г)
@@ -720,22 +878,35 @@ definitions:
         title: Token
         type: string
         minLength: 1
-  User:
+  CustomUser:
     type: object
     properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
       email:
         title: Адрес электронной почты
         type: string
         format: email
         readOnly: true
         minLength: 1
-      id:
-        title: ID
-        type: integer
-        readOnly: true
+      first_name:
+        title: Имя
+        type: string
+        maxLength: 150
+      last_name:
+        title: Фамилия
+        type: string
+        maxLength: 150
+      surname:
+        title: Отчество
+        type: string
+        maxLength: 150
   CustomUserCreate:
     required:
     - email
+    - username
     - password
     type: object
     properties:
@@ -744,6 +915,14 @@ definitions:
         type: string
         format: email
         maxLength: 254
+        minLength: 1
+      username:
+        title: Имя пользователя
+        description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+          и символы @/./+/-/_.
+        type: string
+        pattern: ^[\w.@+-]+$
+        maxLength: 150
         minLength: 1
       password:
         title: Password
@@ -794,14 +973,16 @@ definitions:
         minLength: 1
   UsernameResetConfirm:
     required:
-    - new_email
+    - new_username
     type: object
     properties:
-      new_email:
-        title: Адрес электронной почты
+      new_username:
+        title: Имя пользователя
+        description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+          и символы @/./+/-/_.
         type: string
-        format: email
-        maxLength: 254
+        pattern: ^[\w.@+-]+$
+        maxLength: 150
         minLength: 1
   SetPassword:
     required:
@@ -820,16 +1001,31 @@ definitions:
   SetUsername:
     required:
     - current_password
-    - new_email
+    - new_username
     type: object
     properties:
       current_password:
         title: Current password
         type: string
         minLength: 1
-      new_email:
-        title: Адрес электронной почты
+      new_username:
+        title: Имя пользователя
+        description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+          и символы @/./+/-/_.
         type: string
-        format: email
-        maxLength: 254
+        pattern: ^[\w.@+-]+$
+        maxLength: 150
         minLength: 1
+  AuthDetailError:
+    type: object
+    properties:
+      detail:
+        type: string
+        example: No active account found with the given credentials
+  AuthValidationError:
+    type: object
+    description: Карта ошибок валидации djoser (ключ = поле, значение = список ошибок)
+    additionalProperties:
+      type: array
+      items:
+        type: string
