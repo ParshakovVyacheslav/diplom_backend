@@ -80,16 +80,17 @@ jobs:
       #     push: true
       #     tags: ${{ env.DOCKERHUB_USERNAME }}/diplom:latest
 
-      - name: Copy files to server
-        uses: easingthemes/ssh-deploy@v5.0.0
+      - name: Copy production compose + nginx configs to server
+        uses: appleboy/scp-action@v0.1.7
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
-          REMOTE_USER: ${{ secrets.SERVER_USER }}
-          REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
-          SOURCE: "docker-compose.prod.yml nginx.conf"
-          TARGET: "/root/diplom_backend_prod/"
-          ARGS: "-rlgoDzvc -i --delete"
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "${{ github.workspace }}/docker-compose.prod.yml,${{ github.workspace }}/nginx.conf"
+          target: /root/diplom_backend_prod/
+          strip_components: 1
 
       # - name: Deploy via SSH (docker-compose v1)
       #   uses: appleboy/ssh-action@v1.0.3
