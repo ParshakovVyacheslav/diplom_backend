@@ -80,42 +80,34 @@ jobs:
       #     push: true
       #     tags: ${{ env.DOCKERHUB_USERNAME }}/diplom:latest
 
-      - name: Copy production compose
+      - name: Copy production compose + nginx configs to server
         uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
-          source: "docker-compose.prod.yml"
-          target: /root/diplom_backend_prod/
-
-      - name: Copy nginx config
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
-          source: "nginx.conf"
-          target: /root/diplom_backend_prod/
-
-      - name: Deploy via SSH (docker-compose v1)
-        uses: appleboy/ssh-action@v1.0.3
         if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          script: |
-            set -e
-            cd /root/diplom_backend_prod
-            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+          source: "${{ github.workspace }}/docker-compose.prod.yml,${{ github.workspace }}/nginx.conf"
+          target: /root/diplom_backend_prod/
+          strip_components: 1
 
-            # Проверка, что docker-compose (v1) доступен
-            docker-compose --version
+      # - name: Deploy via SSH (docker-compose v1)
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+      #   with:
+      #     host: ${{ secrets.SERVER_HOST }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     port: ${{ secrets.SERVER_PORT || 22 }}
+      #     script: |
+      #       set -e
+      #       cd /root/diplom_backend_prod
+      #       export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
 
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
-            docker-compose -f docker-compose.prod.yml ps
+      #       # Проверка, что docker-compose (v1) доступен
+      #       docker-compose --version
+
+      #       docker-compose -f docker-compose.prod.yml pull
+      #       docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+      #       docker-compose -f docker-compose.prod.yml ps
