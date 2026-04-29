@@ -112,11 +112,7 @@ jobs:
           script: |
             set -e
             cd /root/diplom_backend_prod
-            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
-
-            # Проверка, что docker-compose (v1) доступен
-            docker-compose --version
-
+            docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker-compose -f docker-compose.prod.yml up -d --force-recreate
             docker-compose -f docker-compose.prod.yml ps
