@@ -80,44 +80,44 @@ jobs:
       #     push: true
       #     tags: ${{ env.DOCKERHUB_USERNAME }}/diplom:latest
 
-      - name: Copy docker-compose file
-        uses: easingthemes/ssh-deploy@v5.0.0
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
-          REMOTE_USER: ${{ secrets.SERVER_USER }}
-          REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
-          SOURCE: "docker-compose.prod.yml"
-          TARGET: "/root/diplom_backend_prod/"
-          ARGS: "-rlgoDzvc -i --delete"
-
-      - name: Copy nginx config
-        uses: easingthemes/ssh-deploy@v5.0.0
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
-          REMOTE_USER: ${{ secrets.SERVER_USER }}
-          REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
-          SOURCE: "nginx.conf"
-          TARGET: "/root/diplom_backend_prod/"
-          ARGS: "-rlgoDzvc -i --delete"
-
-      # - name: Deploy via SSH (docker-compose v1)
-      #   uses: appleboy/ssh-action@v1.0.3
-      #   if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+      # - name: Copy docker-compose file
+      #   uses: easingthemes/ssh-deploy@v5.0.0
       #   with:
-      #     host: ${{ secrets.SERVER_HOST }}
-      #     username: ${{ secrets.SERVER_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     port: ${{ secrets.SERVER_PORT || 22 }}
-      #     script: |
-      #       set -e
-      #       cd /root/diplom_backend_prod
-      #       export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+      #     REMOTE_USER: ${{ secrets.SERVER_USER }}
+      #     REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
+      #     SOURCE: "docker-compose.prod.yml"
+      #     TARGET: "/root/diplom_backend_prod/"
+      #     ARGS: "-rlgoDzvc -i --delete"
 
-      #       # Проверка, что docker-compose (v1) доступен
-      #       docker-compose --version
+      # - name: Copy nginx config
+      #   uses: easingthemes/ssh-deploy@v5.0.0
+      #   with:
+      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+      #     REMOTE_USER: ${{ secrets.SERVER_USER }}
+      #     REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
+      #     SOURCE: "nginx.conf"
+      #     TARGET: "/root/diplom_backend_prod/"
+      #     ARGS: "-rlgoDzvc -i --delete"
 
-      #       docker-compose -f docker-compose.prod.yml pull
-      #       docker-compose -f docker-compose.prod.yml up -d --remove-orphans
-      #       docker-compose -f docker-compose.prod.yml ps
+      - name: Deploy via SSH (docker-compose v1)
+        uses: appleboy/ssh-action@v1.0.3
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd /root/diplom_backend_prod
+            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+
+            # Проверка, что docker-compose (v1) доступен
+            docker-compose --version
+
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker-compose -f docker-compose.prod.yml ps
