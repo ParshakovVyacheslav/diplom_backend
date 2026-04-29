@@ -80,16 +80,25 @@ jobs:
       #     push: true
       #     tags: ${{ env.DOCKERHUB_USERNAME }}/diplom:latest
 
-      - name: Copy files to server
+      - name: Copy docker-compose file
         uses: easingthemes/ssh-deploy@v5.0.0
         with:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SERVER_HOST }}
           REMOTE_USER: ${{ secrets.SERVER_USER }}
           REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
-          SOURCE: |
-            docker-compose.prod.yml
-            nginx.conf
+          SOURCE: "docker-compose.prod.yml"
+          TARGET: "/root/diplom_backend_prod/"
+          ARGS: "-rlgoDzvc -i --delete"
+
+      - name: Copy nginx config
+        uses: easingthemes/ssh-deploy@v5.0.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
+          SOURCE: "nginx.conf"
           TARGET: "/root/diplom_backend_prod/"
           ARGS: "-rlgoDzvc -i --delete"
 
