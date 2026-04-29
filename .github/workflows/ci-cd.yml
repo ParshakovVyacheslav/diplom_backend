@@ -87,7 +87,9 @@ jobs:
           REMOTE_HOST: ${{ secrets.SERVER_HOST }}
           REMOTE_USER: ${{ secrets.SERVER_USER }}
           REMOTE_PORT: ${{ secrets.SERVER_PORT || 22 }}
-          SOURCE: "${{ github.workspace }}/docker-compose.prod.yml ${{ github.workspace }}/nginx.conf"
+          SOURCE: |
+            docker-compose.prod.yml
+            nginx.conf
           TARGET: "/root/diplom_backend_prod/"
           ARGS: "-rlgoDzvc -i --delete"
 
