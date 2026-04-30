@@ -113,6 +113,7 @@ class MealViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description=(
             "Получить список приемов пищи пользователя. "
+            "В элементе списка поле name содержит название связанного продукта (Product.name). "
             "Необязательный параметр date (Unix timestamp в секундах или миллисекундах) "
             "ограничивает выборку приемами пищи за календарный день этой метки времени (UTC)."
         ),
@@ -139,7 +140,10 @@ class MealViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Получить детальную информацию о приеме пищи",
+        operation_description=(
+            "Получить детальную информацию о приеме пищи; "
+            "поле name в ответе — название связанного продукта."
+        ),
         responses={
             200: MealSerializer(),
             401: "Пользователь не авторизован",
@@ -154,10 +158,10 @@ class MealViewSet(viewsets.ModelViewSet):
         operation_description="Создать новый прием пищи",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['product', 'name', 'amount'],
+            required=['product', 'type', 'amount'],
             properties={
                 'product': openapi.Schema(type=openapi.TYPE_INTEGER, example=1, description='ID продукта'),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, example='Завтрак', description='Название приема пищи'),
+                'type': openapi.Schema(type=openapi.TYPE_STRING, example='Завтрак', description='Название приема пищи'),
                 'amount': openapi.Schema(type=openapi.TYPE_INTEGER, example=150, description='Количество в граммах'),
                 'position': openapi.Schema(type=openapi.TYPE_INTEGER, example=1, description='Порядковый номер')
             }
@@ -176,10 +180,10 @@ class MealViewSet(viewsets.ModelViewSet):
         operation_description="Обновить прием пищи",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['product', 'name', 'amount'],
+            required=['product', 'type', 'amount'],
             properties={
                 'product': openapi.Schema(type=openapi.TYPE_INTEGER, example=2, description='ID продукта'),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, example='Обед', description='Название приема пищи'),
+                'type': openapi.Schema(type=openapi.TYPE_STRING, example='Обед', description='Название приема пищи'),
                 'amount': openapi.Schema(type=openapi.TYPE_INTEGER, example=200, description='Количество в граммах'),
                 'position': openapi.Schema(type=openapi.TYPE_INTEGER, example=2, description='Порядковый номер')
             }
@@ -201,7 +205,7 @@ class MealViewSet(viewsets.ModelViewSet):
             type=openapi.TYPE_OBJECT,
             properties={
                 'product': openapi.Schema(type=openapi.TYPE_INTEGER, example=3, description='ID продукта (необязательно)'),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, example='Ужин', description='Название приема пищи (необязательно)'),
+                'type': openapi.Schema(type=openapi.TYPE_STRING, example='Ужин', description='Название приема пищи (необязательно)'),
                 'amount': openapi.Schema(type=openapi.TYPE_INTEGER, example=180, description='Количество в граммах (необязательно)'),
                 'position': openapi.Schema(type=openapi.TYPE_INTEGER, example=3, description='Порядковый номер (необязательно)')
             }
@@ -230,7 +234,7 @@ class MealViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = self.queryset.filter(user=self.request.user)
+        qs = self.queryset.filter(user=self.request.user).select_related('product')
         if self.action != 'list':
             return qs
 

@@ -9,9 +9,11 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class MealSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='product.name', read_only=True)
+
     class Meta:
         model = Meal
-        fields = ['id', 'product', 'name', 'amount', 'unit', 'position', 'date', 
+        fields = ['id', 'product', 'name', 'type', 'amount', 'unit', 'position', 'date',
                   'calories', 'protein', 'carbohydrates', 'fats']
         read_only_fields = ('user', 'calories', 'protein', 'carbohydrates', 'fats')
     
