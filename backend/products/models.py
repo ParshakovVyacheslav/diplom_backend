@@ -46,7 +46,8 @@ class Meal(models.Model):
     
     name = models.CharField(max_length=255, verbose_name='Название приема пищи')
     amount = models.IntegerField(default=100, verbose_name='Количество порций')
-    
+    unit = models.CharField(max_length=255, verbose_name='Единица измерения', blank=True, default='граммы')
+
     position = models.IntegerField(default=0, verbose_name='Порядковый номер')
     date = models.DateTimeField(verbose_name='Дата приема пищи', auto_now_add=True)
     
