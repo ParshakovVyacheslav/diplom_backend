@@ -21,7 +21,9 @@ http://{{ domain }}/{{ url|safe }}
     {% blocktrans %}Вы получили это письмо, потому что вам нужно завершить активацию аккаунта на {{ site_name }}.{% endblocktrans %}
 </p>
 <p>
-    {% trans "Пожалуйста, перейдите по <a href="http://{{ domain }}/auth/{{ url|safe }}">ссылке</a> для активации аккаунта:" %}<br>
+    {% blocktrans with domain=domain url=url|safe %}
+    Пожалуйста, перейдите по <a href="http://{{ domain }}/auth/{{ url }}">ссылке</a> для активации аккаунта:
+    {% endblocktrans %}
 </p>
 <p>{% trans "Спасибо за использование нашего сайта!" %}</p>
 <p>{% blocktrans %}Команда RICE{% endblocktrans %}</p>
