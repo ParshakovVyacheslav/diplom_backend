@@ -1,6 +1,9 @@
+import datetime
+
 from django.db.models import F
 from django.contrib.postgres.search import TrigramSimilarity
 from rest_framework import viewsets, mixins, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -108,9 +111,26 @@ class MealViewSet(viewsets.ModelViewSet):
     queryset = Meal.objects.all() 
     
     @swagger_auto_schema(
-        operation_description="Получить список всех приемов пищи пользователя",
+        operation_description=(
+            "Получить список приемов пищи пользователя. "
+            "Необязательный параметр date (Unix timestamp в секундах или миллисекундах) "
+            "ограничивает выборку приемами пищи за календарный день этой метки времени (UTC)."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                'date',
+                openapi.IN_QUERY,
+                description=(
+                    'Unix timestamp (секунды или миллисекунды). '
+                    'Если указан, возвращаются только Meal за тот же календарный день (UTC), что и у метки времени.'
+                ),
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
         responses={
             200: MealSerializer(many=True),
+            400: "Некорректный параметр date",
             401: "Пользователь не авторизован"
         },
         tags=['Приемы пищи']
@@ -210,7 +230,32 @@ class MealViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+        qs = self.queryset.filter(user=self.request.user)
+        if self.action != 'list':
+            return qs
+
+        raw = self.request.query_params.get('date')
+        if raw is None or raw == '':
+            return qs
+
+        try:
+            ts = int(raw)
+        except (TypeError, ValueError):
+            raise ValidationError(
+                {'date': 'Ожидается целое число (Unix timestamp).'}
+            )
+
+        if abs(ts) > 10**12:
+            ts = ts / 1000.0
+
+        try:
+            dt_utc = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
+        except (OSError, OverflowError, ValueError):
+            raise ValidationError({'date': 'Недопустимое значение timestamp.'})
+
+        day_start = dt_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + datetime.timedelta(days=1)
+        return qs.filter(date__gte=day_start, date__lt=day_end)
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
