@@ -162,6 +162,19 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('EMAIL_HOST_USER', 'noreply@yourdomain.com')
 SERVER_EMAIL = os.getenv('EMAIL_HOST_USER', 'noreply@yourdomain.com')
 
+SITE_NAME = os.getenv('SITE_NAME', 'RICE')
+
+# Ссылка в письме при смене почты: по умолчанию — GET на этот же бэкенд.
+# Для диплинка в приложение задайте шаблон, например: riceapp://email-change?token={token}
+EMAIL_CHANGE_CONFIRM_URL_TEMPLATE = os.getenv('EMAIL_CHANGE_CONFIRM_URL_TEMPLATE', '')
+# Время жизни signed-token для смены почты (секунды, по умолчанию 3 суток).
+EMAIL_CHANGE_CONFIRM_MAX_AGE_SECONDS = int(
+    os.getenv('EMAIL_CHANGE_CONFIRM_MAX_AGE_SECONDS', str(3 * 24 * 60 * 60))
+)
+EMAIL_CHANGE_MAIL_SUBJECT = os.getenv(
+    'EMAIL_CHANGE_MAIL_SUBJECT', 'Подтверждение новой почты'
+)
+
 LANGUAGE_CODE = 'ru'
 
 TIME_ZONE = 'UTC'
