@@ -214,5 +214,9 @@ vars/secrets/
 # Nginx — локальный список allow для /admin/ (см. nginx/admin-allow.conf.example)
 nginx/admin-allow.conf
 
+# TLS для docker-compose.prod (не коммитьте ключи)
+ssl/*.pem
+ssl/*.key
+
 # Other
 Dev/

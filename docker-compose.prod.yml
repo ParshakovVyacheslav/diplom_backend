@@ -46,10 +46,15 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/admin-allow.conf:/etc/nginx/admin-allow.conf:ro
       - static:/app/staticfiles
+      # Положите сюда fullchain.pem и privkey.pem (Let's Encrypt или свой ЦС).
+      - ./ssl:/etc/nginx/ssl:ro
+      # Раскомментируйте для certbot webroot и раскомментируйте location в nginx.conf:
+      # - ./certbot-www:/var/www/certbot:ro
     depends_on:
       - web
 

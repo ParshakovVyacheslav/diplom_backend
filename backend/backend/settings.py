@@ -10,7 +10,43 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-eyb1#49vn#8jwh^z=z&
 
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,web').split(',')
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,web').split(',') if h.strip()
+]
+
+# Внутренний URL для POST активации из activate_user (Docker-сеть: http://web:8000/...).
+DJANGO_INTERNAL_ACTIVATION_URL = os.getenv(
+    'DJANGO_INTERNAL_ACTIVATION_URL',
+    'http://web:8000/auth/users/activation/',
+)
+
+# Схема публичных ссылок в письмах (https в продакшене за reverse-proxy).
+DJANGO_PUBLIC_URL_SCHEME = os.getenv('DJANGO_PUBLIC_URL_SCHEME', 'http').strip().lower()
+if '://' in DJANGO_PUBLIC_URL_SCHEME:
+    DJANGO_PUBLIC_URL_SCHEME = DJANGO_PUBLIC_URL_SCHEME.split('://', 1)[0]
+
+_use_https_cookies = os.getenv('DJANGO_SECURE_COOKIES', '').strip().lower() in ('1', 'true', 'yes')
+if _use_https_cookies:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+else:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+
+USE_X_FORWARDED_HOST = True
+# За nginx с proxy_set_header X-Forwarded-Proto https запрос считается безопасным.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+_hsts = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '0') or '0')
+SECURE_HSTS_SECONDS = _hsts if _hsts > 0 else 0
+if SECURE_HSTS_SECONDS:
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+        os.getenv('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False') == 'True'
+    )
+    SECURE_HSTS_PRELOAD = os.getenv('DJANGO_SECURE_HSTS_PRELOAD', 'False') == 'True'
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
 
 INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
@@ -145,12 +181,7 @@ CSRF_TRUSTED_ORIGINS = [
     if o.strip()
 ]
 
-CSRF_COOKIE_DOMAIN = None 
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'http')
-
+CSRF_COOKIE_DOMAIN = None
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'localhost')

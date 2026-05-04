@@ -1,0 +1,1 @@
+# Keep ssl/ in git; do not commit *.pem / *.key (see .gitignore).

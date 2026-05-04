@@ -45,7 +45,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.dev.conf:/etc/nginx/conf.d/default.conf
       - ./nginx/admin-allow.conf:/etc/nginx/admin-allow.conf:ro
       - static:/app/staticfiles
     depends_on:

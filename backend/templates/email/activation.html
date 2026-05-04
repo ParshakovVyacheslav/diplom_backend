@@ -8,7 +8,7 @@
 {% blocktrans %}Вы получили это письмо, потому что вам нужно завершить активацию аккаунта на RICE.{% endblocktrans %}
 
 {% trans "Пожалуйста, перейдите по ссылке ниже для активации аккаунта:" %}
-http://{{ domain }}/{{ url|safe }}
+{{ protocol }}://{{ domain }}/{{ url|safe }}
 
 {% trans "Спасибо за использование нашего сайта!" %}
 
@@ -22,7 +22,7 @@ http://{{ domain }}/{{ url|safe }}
 </p>
 <p>
     {% blocktrans with domain=domain url=url|safe %}
-    Пожалуйста, перейдите по <a href="http://{{ domain }}/auth/{{ url }}">ссылке</a> для активации аккаунта:
+    Пожалуйста, перейдите по <a href="{{ protocol }}://{{ domain }}/auth/{{ url }}">ссылке</a> для активации аккаунта:
     {% endblocktrans %}
 </p>
 <p>{% trans "Спасибо за использование нашего сайта!" %}</p>

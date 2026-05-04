@@ -1,6 +1,7 @@
 import logging
 import requests
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -104,10 +105,11 @@ _VALIDATION_ERROR_BODY_SCHEMA = openapi.Schema(
 
 def activate_user(request, uid, token):
     try:
-        scheme = 'https' if request.is_secure() else 'http'
-        domain = request.get_host()
-
-        djoser_url = f"http://127.0.0.1:8000/auth/users/activation/"
+        djoser_url = getattr(
+            settings,
+            'DJANGO_INTERNAL_ACTIVATION_URL',
+            'http://web:8000/auth/users/activation/',
+        )
 
         response = requests.post(
             djoser_url,
