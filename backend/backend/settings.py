@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'drf_yasg',
 
     'products.apps.ProductsConfig',
+    'training.apps.TrainingConfig',
 ]
 
 MIDDLEWARE = [
