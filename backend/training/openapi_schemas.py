@@ -44,3 +44,11 @@ _MUSCLE_QUERY = openapi.Parameter(
 )
 
 EXERCISE_LIST_QUERY_PARAMS = [_QUERY_PARAM, _MUSCLE_GROUP_QUERY, _MUSCLE_QUERY]
+
+ASSIGNMENT_DATE_PATH_PARAM = openapi.Parameter(
+    'date_iso',
+    openapi.IN_PATH,
+    description='Дата YYYY-MM-DD',
+    type=openapi.TYPE_STRING,
+    required=True,
+)
