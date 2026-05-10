@@ -1,4 +1,5 @@
 import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db.models import F
 from django.contrib.postgres.search import TrigramSimilarity
@@ -114,24 +115,36 @@ class MealViewSet(viewsets.ModelViewSet):
         operation_description=(
             "Получить список приемов пищи пользователя. "
             "В элементе списка поле name содержит название связанного продукта (Product.name). "
-            "Необязательный параметр date (Unix timestamp в секундах или миллисекундах) "
-            "ограничивает выборку приемами пищи за календарный день этой метки времени (UTC)."
+            "Необязательный параметр date (календарная дата ISO 8601, YYYY-MM-DD) ограничивает выборку "
+            "приемами пищи за этот локальный календарный день. Часовой пояс задаётся параметром timezone "
+            "(IANA, например Europe/Moscow); если не указан — используется UTC."
         ),
         manual_parameters=[
             openapi.Parameter(
                 'date',
                 openapi.IN_QUERY,
                 description=(
-                    'Unix timestamp (секунды или миллисекунды). '
-                    'Если указан, возвращаются только Meal за тот же календарный день (UTC), что и у метки времени.'
+                    'Дата в формате ISO 8601 (YYYY-MM-DD). '
+                    'Возвращаются только приёмы пищи за этот календарный день в выбранном часовом поясе.'
                 ),
-                type=openapi.TYPE_INTEGER,
+                type=openapi.TYPE_STRING,
+                format=openapi.FORMAT_DATE,
+                required=False,
+            ),
+            openapi.Parameter(
+                'timezone',
+                openapi.IN_QUERY,
+                description=(
+                    'Идентификатор часового пояса IANA (например Europe/Moscow, America/New_York). '
+                    'По умолчанию UTC.'
+                ),
+                type=openapi.TYPE_STRING,
                 required=False,
             ),
         ],
         responses={
             200: MealSerializer(many=True),
-            400: "Некорректный параметр date",
+            400: "Некорректные параметры date или timezone",
             401: "Пользователь не авторизован"
         },
         tags=['Приемы пищи']
@@ -242,24 +255,31 @@ class MealViewSet(viewsets.ModelViewSet):
         if raw is None or raw == '':
             return qs
 
+        raw = raw.strip()
         try:
-            ts = int(raw)
-        except (TypeError, ValueError):
+            day = datetime.date.fromisoformat(raw)
+        except ValueError:
             raise ValidationError(
-                {'date': 'Ожидается целое число (Unix timestamp).'}
+                {'date': 'Ожидается дата в формате ISO 8601 (YYYY-MM-DD).'}
             )
 
-        if abs(ts) > 10**12:
-            ts = ts / 1000.0
-
+        tz_name = (self.request.query_params.get('timezone') or 'UTC').strip()
+        if not tz_name:
+            tz_name = 'UTC'
         try:
-            dt_utc = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
-        except (OSError, OverflowError, ValueError):
-            raise ValidationError({'date': 'Недопустимое значение timestamp.'})
+            tz = ZoneInfo(tz_name)
+        except ZoneInfoNotFoundError:
+            raise ValidationError(
+                {
+                    'timezone': 'Неизвестный часовой пояс. Укажите имя IANA, например Europe/Moscow.'
+                }
+            )
 
-        day_start = dt_utc.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = day_start + datetime.timedelta(days=1)
-        return qs.filter(date__gte=day_start, date__lt=day_end)
+        start_local = datetime.datetime.combine(
+            day, datetime.time.min, tzinfo=tz
+        )
+        end_local = start_local + datetime.timedelta(days=1)
+        return qs.filter(date__gte=start_local, date__lt=end_local)
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
