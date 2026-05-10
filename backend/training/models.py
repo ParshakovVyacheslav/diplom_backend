@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -115,6 +116,10 @@ class WorkoutSet(models.Model):
     )
     name = models.CharField(max_length=255, blank=True, default='')
     order = models.PositiveSmallIntegerField(default=0, db_index=True)
+    rounds = models.PositiveSmallIntegerField(
+        default=1,
+        help_text='Сколько «кругов» сета запланировано; остаток по конкретному назначению — в AssignmentWorkoutSetProgress.',
+    )
 
     class Meta:
         ordering = ['order', 'id']
@@ -253,3 +258,51 @@ class AssignmentApproachProgress(models.Model):
 
     def __str__(self):
         return f'{self.assignment_id} / {self.approach_id}: {self.is_done}'
+
+
+class AssignmentWorkoutSetProgress(models.Model):
+    """Сколько кругов сета осталось по конкретному назначению (WorkoutSet.rounds — план)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment = models.ForeignKey(
+        Assignment,
+        on_delete=models.CASCADE,
+        related_name='workout_set_progress',
+    )
+    workout_set = models.ForeignKey(
+        WorkoutSet,
+        on_delete=models.CASCADE,
+        related_name='assignment_set_progress',
+    )
+    rounds_remains = models.IntegerField(
+        default=1,
+        validators=[MinValueValidator(0)],
+        help_text='Оставшиеся круги (0 — закончен); если записи нет, клиент считает равным workout_set.rounds.',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['assignment', 'workout_set'],
+                name='uniq_training_assignment_workout_set_progress',
+            ),
+        ]
+        verbose_name = 'прогресс сета по назначению'
+        verbose_name_plural = 'прогресс сетов по назначениям'
+
+    def clean(self):
+        super().clean()
+        if not self.assignment_id or not self.workout_set_id:
+            return
+        if self.workout_set.template_id != self.assignment.template_id:
+            raise ValidationError(
+                {'workout_set': 'Сет относится к другому шаблону, чем это назначение.'}
+            )
+        cap = self.workout_set.rounds
+        if self.rounds_remains > cap:
+            raise ValidationError(
+                {'rounds_remains': f'Не больше запланированных кругов сета ({cap}).'}
+            )
+
+    def __str__(self):
+        return f'{self.assignment_id} / {self.workout_set_id}: {self.rounds_remains} left'

@@ -9,10 +9,19 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Approach, Assignment, AssignmentApproachProgress, AssignmentTemplate, Exercise
+from .models import (
+    Approach,
+    Assignment,
+    AssignmentApproachProgress,
+    AssignmentTemplate,
+    AssignmentWorkoutSetProgress,
+    Exercise,
+    WorkoutSet,
+)
 from .openapi_schemas import (
     ASSIGNMENT_APPROACH_PATH_PARAMS,
     ASSIGNMENT_DATE_PATH_PARAM,
+    ASSIGNMENT_WORKOUT_SET_PATH_PARAMS,
     EXERCISE_LIST_QUERY_PARAMS,
 )
 from .serializers import (
@@ -26,6 +35,8 @@ from .serializers import (
     ExerciseSerializer,
     ExerciseWriteSerializer,
     StandaloneAssignmentPutSerializer,
+    WorkoutSetReadSerializer,
+    WorkoutSetRoundsRemainsPatchSerializer,
     prefetch_assignments_nested,
     prefetch_template_nested,
 )
@@ -161,6 +172,8 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
             'затем при isActive=true (по умолчанию) генерирует Assignment на даты согласно daysOfWeek до endDate '
             '(либо горизонт TRAINING_SCHEDULE_DEFAULT_DAYS, если endDate пустой). '
             'При isActive=false назначения не создаются. '
+            'В каждом элементе sets: rounds (≥1, по умолчанию 1) — плановое число «кругов» сета; '
+            'остаток по каждому назначению клиент видит как roundsRemains. '
             'scheduleStartDate — дата начала генерации (по умолчанию сегодня).'
         ),
         request_body=AssignmentTemplatePutSerializer,
@@ -415,5 +428,61 @@ class ApproachIsDonePatchView(APIView):
         ctx = {'approach_done': done_map}
         return Response(
             ApproachNestedReadSerializer(approach, context=ctx).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class WorkoutSetRoundsRemainsPatchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary='Остаток кругов сета по конкретному назначению',
+        operation_description=(
+            'Обновляет roundsRemains для пары (назначение, сет). Допустимо 0 … workoutSet.rounds '
+            '(поле rounds из шаблонного сета в ответе по дате).'
+        ),
+        manual_parameters=ASSIGNMENT_WORKOUT_SET_PATH_PARAMS,
+        request_body=WorkoutSetRoundsRemainsPatchSerializer,
+        responses={
+            200: WorkoutSetReadSerializer(),
+            400: 'Ошибка валидации',
+            401: _AUTH_ERROR,
+            404: 'Не найдено',
+        },
+        tags=_SWAGGER_TAG,
+    )
+    def patch(self, request, assignment_pk, workout_set_pk, *args, **kwargs):
+        assignment = get_object_or_404(
+            prefetch_assignments_nested(Assignment.objects.filter(user=request.user)),
+            pk=assignment_pk,
+        )
+        ws = get_object_or_404(
+            WorkoutSet.objects.select_related('template'),
+            pk=workout_set_pk,
+            template__user=request.user,
+        )
+        if ws.template_id != assignment.template_id:
+            raise ValidationError('Сет не принадлежит шаблону этого назначения')
+        ser = WorkoutSetRoundsRemainsPatchSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        v = int(ser.validated_data['roundsRemains'])
+        if v > ws.rounds:
+            raise ValidationError(f'roundsRemains не больше запланированных кругов ({ws.rounds}).')
+        AssignmentWorkoutSetProgress.objects.update_or_create(
+            assignment=assignment,
+            workout_set=ws,
+            defaults={'rounds_remains': v},
+        )
+        rm = dict(
+            AssignmentWorkoutSetProgress.objects.filter(assignment=assignment).values_list(
+                'workout_set_id',
+                'rounds_remains',
+            ),
+        )
+        return Response(
+            WorkoutSetReadSerializer(
+                ws,
+                context={'request': request, 'set_rounds_remains': rm},
+            ).data,
             status=status.HTTP_200_OK,
         )

@@ -69,3 +69,20 @@ ASSIGNMENT_APPROACH_PATH_PARAMS = [
         required=True,
     ),
 ]
+
+ASSIGNMENT_WORKOUT_SET_PATH_PARAMS = [
+    openapi.Parameter(
+        'assignment_pk',
+        openapi.IN_PATH,
+        description='UUID назначения (Assignment)',
+        type=openapi.TYPE_STRING,
+        required=True,
+    ),
+    openapi.Parameter(
+        'workout_set_pk',
+        openapi.IN_PATH,
+        description='UUID сета шаблона (WorkoutSet)',
+        type=openapi.TYPE_STRING,
+        required=True,
+    ),
+]

@@ -8,6 +8,7 @@ from .views import (
     AssignmentTemplateViewSet,
     ExerciseGlobalListView,
     ExercisePersonalListCreateView,
+    WorkoutSetRoundsRemainsPatchView,
 )
 
 router = DefaultRouter()
@@ -24,6 +25,10 @@ urlpatterns = [
     path(
         'assignments/<uuid:assignment_pk>/approaches/<uuid:approach_pk>/',
         ApproachIsDonePatchView.as_view(),
+    ),
+    path(
+        'assignments/<uuid:assignment_pk>/workout-sets/<uuid:workout_set_pk>/',
+        WorkoutSetRoundsRemainsPatchView.as_view(),
     ),
     path('assignments/<uuid:pk>/', AssignmentIsDonePatchView.as_view()),
 ]

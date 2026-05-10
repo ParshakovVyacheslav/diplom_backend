@@ -6,6 +6,7 @@ from .models import (
     Assignment,
     AssignmentApproachProgress,
     AssignmentTemplate,
+    AssignmentWorkoutSetProgress,
     Exercise,
     WorkoutSet,
 )
@@ -108,10 +109,18 @@ class ApproachNestedReadSerializer(serializers.ModelSerializer):
 
 class WorkoutSetReadSerializer(serializers.ModelSerializer):
     approaches = serializers.SerializerMethodField()
+    roundsRemains = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkoutSet
-        fields = ('id', 'name', 'order', 'approaches')
+        fields = ('id', 'name', 'order', 'rounds', 'roundsRemains', 'approaches')
+
+    def get_roundsRemains(self, obj):
+        m = self.context.get('set_rounds_remains')
+        ws_id = obj.id if getattr(obj, 'id', None) is not None else obj.pk
+        if isinstance(m, dict) and ws_id in m:
+            return int(m[ws_id])
+        return int(obj.rounds)
 
     def get_approaches(self, obj):
         return ApproachNestedReadSerializer(
@@ -170,7 +179,20 @@ class AssignmentReadSerializer(serializers.ModelSerializer):
                     'approach_id', 'is_done'
                 ),
             )
-        ctx = {**self.context, 'approach_done': done_map}
+        remain_map = {}
+        if hasattr(instance, '_prefetched_objects_cache') and 'workout_set_progress' in instance._prefetched_objects_cache:
+            remain_map = {p.workout_set_id: int(p.rounds_remains) for p in instance.workout_set_progress.all()}
+        else:
+            remain_map = dict(
+                AssignmentWorkoutSetProgress.objects.filter(assignment=instance).values_list(
+                    'workout_set_id', 'rounds_remains'
+                ),
+            )
+        ctx = {
+            **self.context,
+            'approach_done': done_map,
+            'set_rounds_remains': remain_map,
+        }
         return {
             'assignmentId': str(instance.id),
             'date': instance.date,
@@ -212,6 +234,7 @@ class ApproachNestedWriteSerializer(serializers.Serializer):
 class WorkoutSetNestedWriteSerializer(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True, default='', max_length=255)
     order = serializers.IntegerField(required=False, min_value=0, default=0)
+    rounds = serializers.IntegerField(required=False, min_value=1, default=1)
     approaches = ApproachNestedWriteSerializer(many=True)
 
     def validate_approaches(self, value):
@@ -288,10 +311,15 @@ class ApproachIsDonePatchSerializer(serializers.Serializer):
     isDone = serializers.BooleanField()
 
 
+class WorkoutSetRoundsRemainsPatchSerializer(serializers.Serializer):
+    roundsRemains = serializers.IntegerField(min_value=0)
+
+
 def prefetch_assignments_nested(qs):
     appr = Approach.objects.select_related('exercise').order_by('order', 'id')
     return qs.select_related('template').prefetch_related(
         Prefetch('approach_progress', queryset=AssignmentApproachProgress.objects.all()),
+        Prefetch('workout_set_progress', queryset=AssignmentWorkoutSetProgress.objects.all()),
         Prefetch(
             'template__workout_sets',
             queryset=WorkoutSet.objects.order_by('order', 'id').prefetch_related(

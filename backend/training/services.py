@@ -84,7 +84,15 @@ def persist_workout_sets_for_template(template: AssignmentTemplate, sets_payload
     sorted_payload = sorted(enumerate(sets_payload), key=lambda it: int(it[1].get('order', it[0])))
     for i, s in sorted_payload:
         order = int(s.get('order', i))
-        ws = WorkoutSet.objects.create(template=template, name=(s.get('name') or '')[:255], order=order)
+        rounds = int(s.get('rounds', 1))
+        if rounds < 1:
+            raise ValueError('В каждом сете rounds должно быть >= 1')
+        ws = WorkoutSet.objects.create(
+            template=template,
+            name=(s.get('name') or '')[:255],
+            order=order,
+            rounds=rounds,
+        )
         appr_list = s.get('approaches') or []
         if len(appr_list) == 0:
             raise ValueError('В каждом сете нужен хотя бы один подход')
