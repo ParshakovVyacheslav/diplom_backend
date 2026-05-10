@@ -9,7 +9,7 @@ from accounts.profile_views import (
     EmailChangeRequestView,
     GoalView,
     ProfileView,
-    WeightHistoryListCreateView,
+    WeightHistoryListView,
 )
 
 urlpatterns = [
@@ -33,7 +33,7 @@ urlpatterns = [
     ),
     path(
         'weight-history/',
-        WeightHistoryListCreateView.as_view(),
+        WeightHistoryListView.as_view(),
         name='api-profile-weight-history',
     ),
 ]

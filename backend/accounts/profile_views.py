@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone as dt_timezone
 from django.contrib.auth import get_user_model
 from django.core import signing
 from django.http import HttpResponse
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -112,16 +113,6 @@ _WEIGHT_ITEMS_RESPONSE = openapi.Schema(
     },
 )
 
-_WEIGHT_POST_BODY = openapi.Schema(
-    type=openapi.TYPE_OBJECT,
-    properties={
-        'date': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
-        'weight_kg': openapi.Schema(type=openapi.TYPE_NUMBER),
-    },
-    required=['date', 'weight_kg'],
-)
-
-
 def _parse_iso_date(raw: str) -> date | None:
     raw = raw.strip()
     try:
@@ -135,6 +126,17 @@ def _parse_iso_date(raw: str) -> date | None:
         return parsed.date()
     except ValueError:
         return None
+
+
+def _record_weight_history_if_changed(user, old_weight_kg: float, new_weight_kg: float) -> None:
+    if old_weight_kg == new_weight_kg:
+        return
+    today = timezone.now().date()
+    WeightHistoryEntry.objects.update_or_create(
+        user=user,
+        date=today,
+        defaults={'weight_kg': new_weight_kg},
+    )
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -321,7 +323,9 @@ class BodyView(APIView):
             )
         serializer = BodySerializer(body, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        old_w = body.weight_kg
+        instance = serializer.save()
+        _record_weight_history_if_changed(request.user, old_w, instance.weight_kg)
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -339,11 +343,13 @@ class BodyView(APIView):
             )
         serializer = BodySerializer(body, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        old_w = body.weight_kg
+        instance = serializer.save()
+        _record_weight_history_if_changed(request.user, old_w, instance.weight_kg)
         return Response(serializer.data)
 
 
-class WeightHistoryListCreateView(generics.ListCreateAPIView):
+class WeightHistoryListView(generics.ListAPIView):
     serializer_class = WeightHistoryEntrySerializer
     permission_classes = [IsAuthenticated]
 
@@ -374,15 +380,6 @@ class WeightHistoryListCreateView(generics.ListCreateAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        tags=['Профиль'],
-        operation_summary='Добавить точку истории веса',
-        request_body=_WEIGHT_POST_BODY,
-        responses={201: '', 400: '', 401: ''},
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
 
     def get_queryset(self):
         return WeightHistoryEntry.objects.filter(user=self.request.user).order_by('date')

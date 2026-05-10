@@ -1,6 +1,5 @@
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.db import IntegrityError
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
@@ -106,31 +105,7 @@ class WeightHistoryEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = WeightHistoryEntry
         fields = ('id', 'date', 'weight_kg', 'created_at')
-        read_only_fields = ('id', 'created_at')
-
-    def validate(self, attrs):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            qs = WeightHistoryEntry.objects.filter(
-                user=request.user,
-                date=attrs.get('date'),
-            )
-            if self.instance is not None:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise serializers.ValidationError(
-                    {'date': 'На эту дату уже есть запись веса.'}
-                )
-        return attrs
-
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
-        try:
-            return super().create(validated_data)
-        except IntegrityError:
-            raise serializers.ValidationError(
-                {'date': 'На эту дату уже есть запись веса.'}
-            )
+        read_only_fields = fields
 
 
 class EmailChangeRequestSerializer(serializers.Serializer):
