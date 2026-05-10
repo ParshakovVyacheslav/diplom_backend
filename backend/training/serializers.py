@@ -75,10 +75,11 @@ class ApproachNestedReadSerializer(serializers.ModelSerializer):
     exerciseName = serializers.SerializerMethodField()
     setsCount = serializers.IntegerField(source='sets_count', read_only=True)
     weightKg = serializers.FloatField(source='weight_kg', allow_null=True, read_only=True)
+    isDone = serializers.BooleanField(source='is_done', read_only=True)
 
     class Meta:
         model = Approach
-        fields = ('id', 'exerciseId', 'exerciseName', 'weightKg', 'reps', 'setsCount', 'order')
+        fields = ('id', 'exerciseId', 'exerciseName', 'weightKg', 'reps', 'setsCount', 'order', 'isDone')
 
     def get_exerciseId(self, obj):
         return str(obj.exercise_id)
@@ -109,11 +110,12 @@ class AssignmentTemplateReadSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     endDate = serializers.DateField(source='end_date', allow_null=True)
     daysOfWeek = serializers.ListField(source='days_of_week', child=serializers.IntegerField(min_value=0, max_value=6))
+    isActive = serializers.BooleanField(source='is_active', read_only=True)
     sets = serializers.SerializerMethodField()
 
     class Meta:
         model = AssignmentTemplate
-        fields = ('id', 'name', 'endDate', 'daysOfWeek', 'sets')
+        fields = ('id', 'name', 'endDate', 'daysOfWeek', 'isActive', 'sets')
 
     def get_sets(self, obj):
         return WorkoutSetReadSerializer(obj.workout_sets.all(), many=True).data
@@ -128,10 +130,11 @@ class AssignmentReadSerializer(serializers.ModelSerializer):
     assignmentId = serializers.UUIDField(source='id', read_only=True)
     date = serializers.DateField()
     template = AssignmentTemplateReadSerializer(read_only=True)
+    isDone = serializers.BooleanField(source='is_done', read_only=True)
 
     class Meta:
         model = Assignment
-        fields = ('assignmentId', 'date', 'template')
+        fields = ('assignmentId', 'date', 'template', 'isDone')
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -160,6 +163,7 @@ class ApproachNestedWriteSerializer(serializers.Serializer):
     reps = serializers.IntegerField(min_value=1)
     setsCount = serializers.IntegerField(min_value=1)
     order = serializers.IntegerField(required=False, min_value=0, default=0)
+    isDone = serializers.BooleanField(required=False, default=False)
 
     def validate_exerciseId(self, value):
         user = self.context['request'].user
@@ -185,6 +189,7 @@ class AssignmentTemplatePutSerializer(serializers.Serializer):
     endDate = serializers.DateField(required=False, allow_null=True)
     daysOfWeek = serializers.ListField(child=serializers.IntegerField(min_value=0, max_value=6))
     scheduleStartDate = serializers.DateField(required=False)
+    isActive = serializers.BooleanField(required=False)
     sets = WorkoutSetNestedWriteSerializer(many=True)
 
     def validate_daysOfWeek(self, value):
@@ -203,6 +208,7 @@ class AssignmentTemplatePatchSerializer(serializers.Serializer):
         child=serializers.IntegerField(min_value=0, max_value=6), required=False, allow_empty=False
     )
     scheduleStartDate = serializers.DateField(required=False)
+    isActive = serializers.BooleanField(required=False)
     sets = WorkoutSetNestedWriteSerializer(many=True, required=False)
 
     def validate_daysOfWeek(self, value):
@@ -236,6 +242,14 @@ def prefetch_template_nested(qs):
             ),
         ),
     )
+
+
+class AssignmentIsDonePatchSerializer(serializers.Serializer):
+    isDone = serializers.BooleanField()
+
+
+class ApproachIsDonePatchSerializer(serializers.Serializer):
+    isDone = serializers.BooleanField()
 
 
 def prefetch_assignments_nested(qs):

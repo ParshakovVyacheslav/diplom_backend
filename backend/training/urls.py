@@ -2,7 +2,9 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    ApproachIsDonePatchView,
     AssignmentByDateView,
+    AssignmentIsDonePatchView,
     AssignmentTemplateViewSet,
     ExerciseGlobalListView,
     ExercisePersonalListCreateView,
@@ -19,4 +21,6 @@ urlpatterns = [
         ExercisePersonalListCreateView.as_view({'get': 'list', 'post': 'create'}),
     ),
     path('assignments/date/<str:date_iso>/', AssignmentByDateView.as_view()),
+    path('assignments/<uuid:pk>/', AssignmentIsDonePatchView.as_view()),
+    path('approaches/<uuid:pk>/', ApproachIsDonePatchView.as_view()),
 ]

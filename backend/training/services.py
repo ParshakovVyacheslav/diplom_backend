@@ -53,6 +53,7 @@ def _persist_approaches_for_set(ws: WorkoutSet, approaches_payload: list[dict]):
             reps=int(a['reps']),
             sets_count=int(a['setsCount']),
             order=int(a.get('order', j)),
+            is_done=bool(a.get('isDone', False)),
         )
         appr.full_clean()
         appr.save()
@@ -68,6 +69,7 @@ def create_scheduled_assignment_template(user, validated: dict) -> AssignmentTem
         name=validated['name'],
         end_date=validated.get('endDate'),
         days_of_week=validated['daysOfWeek'],
+        is_active=bool(validated.get('isActive', True)),
     )
     persist_workout_sets_for_template(tmpl, validated['sets'])
     reschedule_assignments_for_template(tmpl, start_date)
@@ -92,9 +94,11 @@ def persist_workout_sets_for_template(template: AssignmentTemplate, sets_payload
 
 @transaction.atomic
 def reschedule_assignments_for_template(template: AssignmentTemplate, start: date):
-    """Удалить все Assignment по шаблону и заново создать по days_of_week / end_date."""
+    """Удалить все Assignment по шаблону; при активном шаблоне заново создать по календарю."""
 
     Assignment.objects.filter(template=template).delete()
+    if not template.is_active:
+        return
     today = timezone.now().date()
     anchor = max(start, today)
     bulk = []
@@ -119,6 +123,7 @@ def replace_assignments_for_day(user, workout_date: date, payload: dict) -> Assi
         name=tmpl_name[:255],
         end_date=payload.get('endDate'),
         days_of_week=payload.get('daysOfWeek') or [workout_date.weekday()],
+        is_active=True,
     )
     persist_workout_sets_for_template(tmpl, payload['sets'])
     ass = Assignment(user=user, template=tmpl, date=workout_date)

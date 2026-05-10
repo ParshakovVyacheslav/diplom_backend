@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from drf_yasg.utils import swagger_auto_schema
@@ -8,9 +9,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Assignment, AssignmentTemplate, Exercise
+from .models import Approach, Assignment, AssignmentTemplate, Exercise
 from .openapi_schemas import ASSIGNMENT_DATE_PATH_PARAM, EXERCISE_LIST_QUERY_PARAMS
 from .serializers import (
+    ApproachIsDonePatchSerializer,
+    ApproachNestedReadSerializer,
+    AssignmentIsDonePatchSerializer,
     AssignmentReadSerializer,
     AssignmentTemplatePatchSerializer,
     AssignmentTemplatePutSerializer,
@@ -150,8 +154,9 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
         operation_summary='Создать шаблон и назначения по календарю',
         operation_description=(
             'Создаёт AssignmentTemplate и WorkoutSet/Approach из поля sets, '
-            'затем генерирует Assignment на даты согласно daysOfWeek до endDate '
+            'затем при isActive=true (по умолчанию) генерирует Assignment на даты согласно daysOfWeek до endDate '
             '(либо горизонт TRAINING_SCHEDULE_DEFAULT_DAYS, если endDate пустой). '
+            'При isActive=false назначения не создаются. '
             'scheduleStartDate — дата начала генерации (по умолчанию сегодня).'
         ),
         request_body=AssignmentTemplatePutSerializer,
@@ -175,6 +180,10 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_summary='Обновить шаблон полностью (PUT)',
+        operation_description=(
+            'Полная замена полей шаблона и сетов. Поле isActive необязательно: '
+            'если не передано, флаг активности не меняется.'
+        ),
         request_body=AssignmentTemplatePutSerializer,
         responses={
             200: AssignmentTemplateReadSerializer(),
@@ -189,6 +198,10 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_summary='Частично обновить шаблон (PATCH)',
+        operation_description=(
+            'Можно передать isActive: false — все Assignment по шаблону удаляются; '
+            'isActive: true — назначения пересобираются с scheduleStartDate (или с сегодня).'
+        ),
         request_body=AssignmentTemplatePatchSerializer,
         responses={
             200: AssignmentTemplateReadSerializer(),
@@ -210,6 +223,7 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
 
         orig_days = list(instance.days_of_week)
         orig_end = instance.end_date
+        orig_is_active = instance.is_active
 
         with transaction.atomic():
             if not partial:
@@ -223,6 +237,8 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
                     instance.days_of_week = v['daysOfWeek']
                 if 'endDate' in v:
                     instance.end_date = v['endDate']
+            if 'isActive' in v:
+                instance.is_active = v['isActive']
             instance.save()
 
             try:
@@ -232,10 +248,11 @@ class AssignmentTemplateViewSet(viewsets.ModelViewSet):
                 raise ValidationError(str(exc)) from exc
 
             schedule_changed = (list(instance.days_of_week) != orig_days) or (instance.end_date != orig_end)
+            is_active_changed = instance.is_active != orig_is_active
             start = v.get('scheduleStartDate') or timezone.now().date()
 
             try:
-                if schedule_changed:
+                if schedule_changed or is_active_changed:
                     reschedule_assignments_for_template(instance, start)
             except ValueError as exc:
                 raise ValidationError(str(exc)) from exc
@@ -325,3 +342,50 @@ class AssignmentByDateView(APIView):
             Assignment.objects.filter(user=request.user, date=d).order_by('template__name', 'id'),
         )
         return Response(AssignmentReadSerializer(qs, many=True).data, status=status.HTTP_200_OK)
+
+
+class AssignmentIsDonePatchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary='Отметить назначение выполненным / невыполненным',
+        request_body=AssignmentIsDonePatchSerializer,
+        responses={200: AssignmentReadSerializer(), 400: 'Ошибка валидации', 401: _AUTH_ERROR, 404: 'Не найдено'},
+        tags=_SWAGGER_TAG,
+    )
+    def patch(self, request, pk, *args, **kwargs):
+        qs = prefetch_assignments_nested(Assignment.objects.filter(user=request.user))
+        assignment = get_object_or_404(qs, pk=pk)
+        ser = AssignmentIsDonePatchSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        assignment.is_done = ser.validated_data['isDone']
+        assignment.save(update_fields=['is_done'])
+        fresh = prefetch_assignments_nested(Assignment.objects.filter(pk=assignment.pk)).first()
+        return Response(AssignmentReadSerializer(fresh).data, status=status.HTTP_200_OK)
+
+
+class ApproachIsDonePatchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary='Отметить подход в шаблоне выполненным / невыполненным',
+        request_body=ApproachIsDonePatchSerializer,
+        responses={
+            200: ApproachNestedReadSerializer(),
+            400: 'Ошибка валидации',
+            401: _AUTH_ERROR,
+            404: 'Не найдено',
+        },
+        tags=_SWAGGER_TAG,
+    )
+    def patch(self, request, pk, *args, **kwargs):
+        approach = get_object_or_404(
+            Approach.objects.select_related('exercise', 'workout_set__template'),
+            pk=pk,
+            workout_set__template__user=request.user,
+        )
+        ser = ApproachIsDonePatchSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        approach.is_done = ser.validated_data['isDone']
+        approach.save(update_fields=['is_done'])
+        return Response(ApproachNestedReadSerializer(approach).data, status=status.HTTP_200_OK)

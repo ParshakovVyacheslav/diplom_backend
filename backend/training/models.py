@@ -86,6 +86,11 @@ class AssignmentTemplate(models.Model):
         default=list,
         help_text='Дни недели, когда применяется шаблон: список целых 0–6 (пн–вс).',
     )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text='Если выключено, назначения (Assignment) по шаблону не ведутся; существующие удаляются.',
+    )
 
     class Meta:
         ordering = ['name']
@@ -145,6 +150,11 @@ class Approach(models.Model):
     reps = models.PositiveIntegerField(help_text='Повторения в одном рабочем сете.')
     sets_count = models.PositiveIntegerField(help_text='Количество рабочих сетов с этими параметрами.')
     order = models.PositiveSmallIntegerField(default=0, db_index=True)
+    is_done = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='Отмечен ли подход выполненным (на уровне шаблона — общий для всех назначений по этому шаблону).',
+    )
 
     class Meta:
         ordering = ['order', 'id']
@@ -182,6 +192,11 @@ class Assignment(models.Model):
         related_name='assignments',
     )
     date = models.DateField(db_index=True)
+    is_done = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='Тренировка по этому назначению выполнена.',
+    )
 
     class Meta:
         ordering = ['-date', 'id']
