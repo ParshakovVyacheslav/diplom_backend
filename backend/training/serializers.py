@@ -1,7 +1,14 @@
 from django.db.models import Prefetch, Q
 from rest_framework import serializers
 
-from .models import Approach, Assignment, AssignmentTemplate, Exercise, WorkoutSet
+from .models import (
+    Approach,
+    Assignment,
+    AssignmentApproachProgress,
+    AssignmentTemplate,
+    Exercise,
+    WorkoutSet,
+)
 from .services import normalized_days_of_week
 from .validators import SchemaValidationError, validate_exercise_payload
 
@@ -75,11 +82,17 @@ class ApproachNestedReadSerializer(serializers.ModelSerializer):
     exerciseName = serializers.SerializerMethodField()
     setsCount = serializers.IntegerField(source='sets_count', read_only=True)
     weightKg = serializers.FloatField(source='weight_kg', allow_null=True, read_only=True)
-    isDone = serializers.BooleanField(source='is_done', read_only=True)
+    isDone = serializers.SerializerMethodField()
 
     class Meta:
         model = Approach
         fields = ('id', 'exerciseId', 'exerciseName', 'weightKg', 'reps', 'setsCount', 'order', 'isDone')
+
+    def get_isDone(self, obj):
+        done = self.context.get('approach_done')
+        if isinstance(done, dict):
+            return bool(done.get(obj.id))
+        return False
 
     def get_exerciseId(self, obj):
         return str(obj.exercise_id)
@@ -94,11 +107,18 @@ class ApproachNestedReadSerializer(serializers.ModelSerializer):
 
 
 class WorkoutSetReadSerializer(serializers.ModelSerializer):
-    approaches = ApproachNestedReadSerializer(many=True, read_only=True)
+    approaches = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkoutSet
         fields = ('id', 'name', 'order', 'approaches')
+
+    def get_approaches(self, obj):
+        return ApproachNestedReadSerializer(
+            obj.approaches.all(),
+            many=True,
+            context=self.context,
+        ).data
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -118,7 +138,11 @@ class AssignmentTemplateReadSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'endDate', 'daysOfWeek', 'isActive', 'sets')
 
     def get_sets(self, obj):
-        return WorkoutSetReadSerializer(obj.workout_sets.all(), many=True).data
+        return WorkoutSetReadSerializer(
+            obj.workout_sets.all(),
+            many=True,
+            context=self.context,
+        ).data
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -137,9 +161,22 @@ class AssignmentReadSerializer(serializers.ModelSerializer):
         fields = ('assignmentId', 'date', 'template', 'isDone')
 
     def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['assignmentId'] = str(instance.id)
-        return data
+        done_map = {}
+        if hasattr(instance, '_prefetched_objects_cache') and 'approach_progress' in instance._prefetched_objects_cache:
+            done_map = {p.approach_id: p.is_done for p in instance.approach_progress.all()}
+        else:
+            done_map = dict(
+                AssignmentApproachProgress.objects.filter(assignment=instance).values_list(
+                    'approach_id', 'is_done'
+                ),
+            )
+        ctx = {**self.context, 'approach_done': done_map}
+        return {
+            'assignmentId': str(instance.id),
+            'date': instance.date,
+            'template': AssignmentTemplateReadSerializer(instance.template, context=ctx).data,
+            'isDone': instance.is_done,
+        }
 
 
 def _validate_weekdays_list(value):
@@ -163,7 +200,6 @@ class ApproachNestedWriteSerializer(serializers.Serializer):
     reps = serializers.IntegerField(min_value=1)
     setsCount = serializers.IntegerField(min_value=1)
     order = serializers.IntegerField(required=False, min_value=0, default=0)
-    isDone = serializers.BooleanField(required=False, default=False)
 
     def validate_exerciseId(self, value):
         user = self.context['request'].user
@@ -255,6 +291,7 @@ class ApproachIsDonePatchSerializer(serializers.Serializer):
 def prefetch_assignments_nested(qs):
     appr = Approach.objects.select_related('exercise').order_by('order', 'id')
     return qs.select_related('template').prefetch_related(
+        Prefetch('approach_progress', queryset=AssignmentApproachProgress.objects.all()),
         Prefetch(
             'template__workout_sets',
             queryset=WorkoutSet.objects.order_by('order', 'id').prefetch_related(

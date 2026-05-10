@@ -9,8 +9,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Approach, Assignment, AssignmentTemplate, Exercise
-from .openapi_schemas import ASSIGNMENT_DATE_PATH_PARAM, EXERCISE_LIST_QUERY_PARAMS
+from .models import Approach, Assignment, AssignmentApproachProgress, AssignmentTemplate, Exercise
+from .openapi_schemas import (
+    ASSIGNMENT_APPROACH_PATH_PARAMS,
+    ASSIGNMENT_DATE_PATH_PARAM,
+    EXERCISE_LIST_QUERY_PARAMS,
+)
 from .serializers import (
     ApproachIsDonePatchSerializer,
     ApproachNestedReadSerializer,
@@ -368,7 +372,12 @@ class ApproachIsDonePatchView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_summary='Отметить подход в шаблоне выполненным / невыполненным',
+        operation_summary='Отметить подход выполненным по конкретному назначению',
+        operation_description=(
+            'Подход (approach) задаётся шаблоном; прогресс хранится для пары (назначение, подход). '
+            'Тот же шаблон у других назначений не затрагивается.'
+        ),
+        manual_parameters=ASSIGNMENT_APPROACH_PATH_PARAMS,
         request_body=ApproachIsDonePatchSerializer,
         responses={
             200: ApproachNestedReadSerializer(),
@@ -378,14 +387,33 @@ class ApproachIsDonePatchView(APIView):
         },
         tags=_SWAGGER_TAG,
     )
-    def patch(self, request, pk, *args, **kwargs):
+    def patch(self, request, assignment_pk, approach_pk, *args, **kwargs):
+        assignment = get_object_or_404(
+            prefetch_assignments_nested(Assignment.objects.filter(user=request.user)),
+            pk=assignment_pk,
+        )
         approach = get_object_or_404(
             Approach.objects.select_related('exercise', 'workout_set__template'),
-            pk=pk,
+            pk=approach_pk,
             workout_set__template__user=request.user,
         )
+        if approach.workout_set.template_id != assignment.template_id:
+            raise ValidationError('Подход не принадлежит шаблону этого назначения')
         ser = ApproachIsDonePatchSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        approach.is_done = ser.validated_data['isDone']
-        approach.save(update_fields=['is_done'])
-        return Response(ApproachNestedReadSerializer(approach).data, status=status.HTTP_200_OK)
+        AssignmentApproachProgress.objects.update_or_create(
+            assignment=assignment,
+            approach=approach,
+            defaults={'is_done': ser.validated_data['isDone']},
+        )
+        done_map = dict(
+            AssignmentApproachProgress.objects.filter(assignment=assignment).values_list(
+                'approach_id',
+                'is_done',
+            ),
+        )
+        ctx = {'approach_done': done_map}
+        return Response(
+            ApproachNestedReadSerializer(approach, context=ctx).data,
+            status=status.HTTP_200_OK,
+        )

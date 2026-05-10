@@ -53,7 +53,6 @@ def _persist_approaches_for_set(ws: WorkoutSet, approaches_payload: list[dict]):
             reps=int(a['reps']),
             sets_count=int(a['setsCount']),
             order=int(a.get('order', j)),
-            is_done=bool(a.get('isDone', False)),
         )
         appr.full_clean()
         appr.save()

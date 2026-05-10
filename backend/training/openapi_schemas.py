@@ -52,3 +52,20 @@ ASSIGNMENT_DATE_PATH_PARAM = openapi.Parameter(
     type=openapi.TYPE_STRING,
     required=True,
 )
+
+ASSIGNMENT_APPROACH_PATH_PARAMS = [
+    openapi.Parameter(
+        'assignment_pk',
+        openapi.IN_PATH,
+        description='UUID назначения (Assignment)',
+        type=openapi.TYPE_STRING,
+        required=True,
+    ),
+    openapi.Parameter(
+        'approach_pk',
+        openapi.IN_PATH,
+        description='UUID подхода в сете шаблона (Approach)',
+        type=openapi.TYPE_STRING,
+        required=True,
+    ),
+]

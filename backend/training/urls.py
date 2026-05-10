@@ -21,6 +21,9 @@ urlpatterns = [
         ExercisePersonalListCreateView.as_view({'get': 'list', 'post': 'create'}),
     ),
     path('assignments/date/<str:date_iso>/', AssignmentByDateView.as_view()),
+    path(
+        'assignments/<uuid:assignment_pk>/approaches/<uuid:approach_pk>/',
+        ApproachIsDonePatchView.as_view(),
+    ),
     path('assignments/<uuid:pk>/', AssignmentIsDonePatchView.as_view()),
-    path('approaches/<uuid:pk>/', ApproachIsDonePatchView.as_view()),
 ]

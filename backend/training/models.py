@@ -150,11 +150,6 @@ class Approach(models.Model):
     reps = models.PositiveIntegerField(help_text='Повторения в одном рабочем сете.')
     sets_count = models.PositiveIntegerField(help_text='Количество рабочих сетов с этими параметрами.')
     order = models.PositiveSmallIntegerField(default=0, db_index=True)
-    is_done = models.BooleanField(
-        default=False,
-        db_index=True,
-        help_text='Отмечен ли подход выполненным (на уровне шаблона — общий для всех назначений по этому шаблону).',
-    )
 
     class Meta:
         ordering = ['order', 'id']
@@ -219,3 +214,42 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f'{self.date} — {self.template.name}'
+
+
+class AssignmentApproachProgress(models.Model):
+    """Отметка выполнения подхода в рамках конкретного назначения (не шаблона)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment = models.ForeignKey(
+        Assignment,
+        on_delete=models.CASCADE,
+        related_name='approach_progress',
+    )
+    approach = models.ForeignKey(
+        Approach,
+        on_delete=models.CASCADE,
+        related_name='assignment_progress',
+    )
+    is_done = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['assignment', 'approach'],
+                name='uniq_training_assignment_approach_progress',
+            ),
+        ]
+        verbose_name = 'прогресс подхода по назначению'
+        verbose_name_plural = 'прогресс подходов по назначениям'
+
+    def clean(self):
+        super().clean()
+        if not self.assignment_id or not self.approach_id:
+            return
+        if self.approach.workout_set.template_id != self.assignment.template_id:
+            raise ValidationError(
+                {'approach': 'Подход относится к другому шаблону, чем это назначение.'}
+            )
+
+    def __str__(self):
+        return f'{self.assignment_id} / {self.approach_id}: {self.is_done}'
