@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Скачать {{ site_name }}</title>
+    <style>
+        :root {
+            --bg: #0c0f14;
+            --surface: #151a22;
+            --border: #2a3344;
+            --text: #e8edf5;
+            --muted: #8b97ab;
+            --accent: #3dd68c;
+            --accent-hover: #2fbf78;
+            --warn: #f0b429;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(61, 214, 140, 0.18), transparent),
+                var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 28rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 2rem 1.75rem;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+        }
+
+        .logo {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, var(--accent), #1a9d5c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 0.04em;
+            color: #0c0f14;
+            margin-bottom: 1.25rem;
+        }
+
+        h1 {
+            margin: 0 0 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .subtitle {
+            margin: 0 0 1.75rem;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 0.9rem 1.25rem;
+            border-radius: 0.75rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0c0f14;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-disabled {
+            background: var(--border);
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+
+        .notice {
+            margin-top: 1.25rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.65rem;
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+
+        .notice-warn {
+            background: rgba(240, 180, 41, 0.12);
+            border: 1px solid rgba(240, 180, 41, 0.35);
+            color: #f5d78a;
+        }
+
+        .notice-info {
+            background: rgba(61, 214, 140, 0.08);
+            border: 1px solid rgba(61, 214, 140, 0.25);
+            color: var(--muted);
+        }
+
+        .steps {
+            margin: 1.5rem 0 0;
+            padding: 0;
+            list-style: none;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .steps li {
+            display: flex;
+            gap: 0.65rem;
+            margin-bottom: 0.65rem;
+            line-height: 1.4;
+        }
+
+        .steps span {
+            flex-shrink: 0;
+            width: 1.35rem;
+            height: 1.35rem;
+            border-radius: 50%;
+            background: var(--border);
+            color: var(--text);
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .filename {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="logo" aria-hidden="true">{{ site_name|slice:":1" }}</div>
+        <h1>{{ site_name }}</h1>
+        <p class="subtitle">
+            Мобильное приложение для учёта калорий и тренировок. Скачайте APK и установите на Android.
+        </p>
+
+        {% if apk_available %}
+            <a class="btn btn-primary" href="{% url 'download-apk' %}">Скачать для Android</a>
+            {% if apk_filename %}
+                <p class="filename">Файл: {{ apk_filename }}</p>
+            {% endif %}
+            <ul class="steps">
+                <li><span>1</span> Скачайте APK на устройство</li>
+                <li><span>2</span> Разрешите установку из неизвестных источников в настройках</li>
+                <li><span>3</span> Откройте файл и завершите установку</li>
+            </ul>
+        {% else %}
+            <button class="btn btn-disabled" type="button" disabled>Скачивание недоступно</button>
+            <p class="notice notice-warn">
+                Файл приложения пока не загружен на сервер. Обратитесь к администратору.
+            </p>
+        {% endif %}
+
+        <p class="notice notice-info">
+            Требуется Android 8.0 или новее. Устанавливайте только APK с этого официального сайта.
+        </p>
+    </main>
+</body>
+</html>

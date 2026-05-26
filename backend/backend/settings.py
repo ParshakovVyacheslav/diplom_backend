@@ -196,6 +196,9 @@ SERVER_EMAIL = os.getenv('EMAIL_HOST_USER', 'noreply@yourdomain.com')
 
 SITE_NAME = os.getenv('SITE_NAME', 'RICE')
 
+# Путь к APK внутри контейнера/на сервере (см. .env.example и том releases в docker-compose).
+MOBILE_APK_PATH = os.getenv('MOBILE_APK_PATH', '')
+
 # Ссылка в письме при смене почты: по умолчанию — GET на этот же бэкенд.
 # Для диплинка в приложение задайте шаблон, например: riceapp://email-change?token={token}
 EMAIL_CHANGE_CONFIRM_URL_TEMPLATE = os.getenv('EMAIL_CHANGE_CONFIRM_URL_TEMPLATE', '')

@@ -218,5 +218,8 @@ nginx/admin-allow.conf
 ssl/*.pem
 ssl/*.key
 
+# Сборки мобильного приложения (не коммитить APK)
+releases/*.apk
+
 # Other
 Dev/
